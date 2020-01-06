@@ -82,8 +82,8 @@
             }
             catch (Exception ex)
             {
-                this.Notifications.Add(Messages.InternalServerError);
-                return this.Response(ex, HttpStatusCode.InternalServerError, Messages.InternalServerError);
+                this.Notifications.Add(ex.Message);
+                return this.Response(ex, HttpStatusCode.InternalServerError, ex.Message);
             }
         }
 

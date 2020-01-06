@@ -2,6 +2,7 @@
 using BackEnd.Application.Interfaces;
 using BackEnd.Application.ViewModel;
 using BackEnd.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Logging;
 
 namespace BackEnd.API.Controllers

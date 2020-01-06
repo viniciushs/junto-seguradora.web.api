@@ -12,10 +12,10 @@
     using System.Linq;
     using System.Net;
 
-    [Authorize("Bearer")]
-    [Produces("application/json")]
-    [Route("[controller]")]
+    [Authorize]
     [ApiController]
+    [Route("[controller]")]
+    [Produces("application/json")]
     public abstract class BaseController<TViewModel, TFilter, TEntity> : ControllerBase
         where TViewModel : BaseViewModel
         where TFilter : BaseFilter

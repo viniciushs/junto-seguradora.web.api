@@ -1,4 +1,4 @@
-namespace BackEnd.API
+﻿namespace BackEnd.API
 {
     using BackEnd.API.Configuration;
     using BackEnd.Infra.Identity.Contexts;
@@ -6,6 +6,7 @@ namespace BackEnd.API
     using BackEnd.Infra.IoC;
     using global::AutoMapper;
     using Microsoft.AspNetCore.Authentication.JwtBearer;
+    using Microsoft.AspNetCore.Authorization;
     using Microsoft.AspNetCore.Builder;
     using Microsoft.AspNetCore.Hosting;
     using Microsoft.AspNetCore.Identity;
@@ -25,7 +26,7 @@ namespace BackEnd.API
     public class Startup
     {
         /// <summary>
-        ///     O appConfig do projeto. Todas as configura��es foram carregadas aqui.
+        ///     O appConfig do projeto. Todas as configurações foram carregadas aqui.
         /// </summary>
         public static IConfigurationRoot Configuration { get; set; }
 
@@ -56,18 +57,50 @@ namespace BackEnd.API
             })
                 .AddEntityFrameworkStores<IdentityContext>()
                 .AddDefaultTokenProviders();
-            
-            services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer(options =>
-                    options.TokenValidationParameters = new TokenValidationParameters
-                    {
-                        ValidateIssuer = false,
-                        ValidateAudience = false,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Secret"])),
-                        ClockSkew = TimeSpan.Zero
-                    });
+
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+
+            //services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            //    .AddJwtBearer(options =>
+            //        options.TokenValidationParameters = new TokenValidationParameters
+            //        {
+            //            ValidateIssuer = false,
+            //            ValidateAudience = false,
+            //            ValidateLifetime = true,
+            //            ValidateIssuerSigningKey = true,
+            //            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Secret"])),
+            //            ClockSkew = TimeSpan.Zero
+            //        });
+
+            services.AddAuthentication(authOptions =>
+            {
+                authOptions.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                authOptions.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            }).AddJwtBearer(bearerOptions =>
+            {
+                var paramsValidation = bearerOptions.TokenValidationParameters;
+                paramsValidation.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Secret"]));
+
+                // Valida a assinatura de um token recebido
+                paramsValidation.ValidateIssuerSigningKey = true;
+
+                // Verifica se um token recebido ainda é válido
+                paramsValidation.ValidateLifetime = true;
+
+                // Tempo de tolerância para a expiração de um token (utilizado
+                // caso haja problemas de sincronismo de horário entre diferentes
+                // computadores envolvidos no processo de comunicação)
+                paramsValidation.ClockSkew = TimeSpan.Zero;
+            });
+
+            services.AddAuthorization(auth =>
+            {
+                auth.AddPolicy("Bearer", new AuthorizationPolicyBuilder()
+                    .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme‌​)
+                    .RequireAuthenticatedUser()
+                    .Build()
+                );
+            });
 
             services.AddWebApi(options =>
             {
@@ -85,7 +118,7 @@ namespace BackEnd.API
                     {
                         Version = "v1",
                         Title = "BackEnd.API",
-                        Description = "Junto Seguros BackEnd API Swagger Surface",
+                        Description = "Junto Seguradora BackEnd API Swagger Surface",
                         Contact = new Contact { Name = "Vinicius Haninec Silva" }
                     });
             });
@@ -113,11 +146,9 @@ namespace BackEnd.API
             });
 
             app.UseHttpsRedirection();
-            app.UseAuthentication();
             app.UseMvc();
 
             app.UseSwagger();
-
             app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint(url: "/swagger/v1/swagger.json", name: "BackEnd.API V1");

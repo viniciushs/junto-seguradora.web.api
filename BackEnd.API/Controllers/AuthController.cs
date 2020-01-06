@@ -39,8 +39,9 @@
         [HttpPost("register")]
         public async Task<ActionResult<UserToken>> Register([FromBody] UserInfo model)
         {
-            var user = new ApplicationUser {
-                UserName = model.Name,
+            var user = new ApplicationUser
+            {
+                UserName = model.Name.ToCamelCase(),
                 Email = model.Email
             };
             var result = await _userManager.CreateAsync(user, model.Password);
@@ -64,19 +65,20 @@
         [HttpPost("login")]
         public async Task<ActionResult<UserToken>> Login([FromBody] UserInfo userInfo)
         {
-            var result = await _signInManager.PasswordSignInAsync(userInfo.Email, userInfo.Password,
+            var user = await this._userManager.FindByEmailAsync(userInfo.Email);
+            if (user != null)
+            {
+                var result = await _signInManager.PasswordSignInAsync(user.UserName, userInfo.Password,
                  isPersistent: false, lockoutOnFailure: false);
 
-            if (result.Succeeded)
-            {
-                var authUser = await _userManager.FindByEmailAsync(userInfo.Email);
-                userInfo.Name = authUser.NormalizedUserName;
-                return BuildToken(userInfo);
+                if (result.Succeeded)
+                {
+                    userInfo.Name = user.NormalizedUserName;
+                    return BuildToken(userInfo);
+                }
             }
-            else
-            {
-                return BadRequest("Email ou password incorretos.");
-            }
+
+            return BadRequest("Email ou password incorretos.");
         }
 
         [Authorize]

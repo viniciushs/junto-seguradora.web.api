@@ -12,10 +12,10 @@
     using System.Linq;
     using System.Net;
 
+    [Authorize("Bearer")]
     [Produces("application/json")]
     [Route("[controller]")]
     [ApiController]
-    [Authorize]
     public abstract class BaseController<TViewModel, TFilter, TEntity> : ControllerBase
         where TViewModel : BaseViewModel
         where TFilter : BaseFilter
@@ -82,8 +82,8 @@
             }
             catch (Exception ex)
             {
-                this.Notifications.Add(ex.Message);
-                return this.Response(ex, HttpStatusCode.InternalServerError, ex.Message);
+                this.Notifications.Add(Messages.InternalServerError);
+                return this.Response(ex, HttpStatusCode.InternalServerError, Messages.InternalServerError);
             }
         }
 
